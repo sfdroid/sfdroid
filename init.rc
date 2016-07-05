@@ -10,6 +10,9 @@ import /init.environ.rc
 import /init.${ro.hardware}.rc
 import /init.${ro.zygote}.rc
 import /init.trace.rc
+# Include CM's extra init file
+import /init.cm.rc
+
 
 on early-init
     # Apply strict SELinux checking of PROT_EXEC on mmap/mprotect calls.
@@ -51,6 +54,7 @@ on init
     write /sys/fs/cgroup/memory/sw/memory.move_charge_at_immigrate 1
     chown root system /sys/fs/cgroup/memory/sw/tasks
     chmod 0660 /sys/fs/cgroup/memory/sw/tasks
+    chmod 0220 /sys/fs/cgroup/memory/cgroup.event_control
 
     mkdir /system
     mkdir /data 0771 system system
@@ -219,6 +223,7 @@ on post-fs-data
     # create basic filesystem structure
     mkdir /data/misc 01771 system misc
     mkdir /data/misc/adb 02750 system shell
+    mkdir /data/misc/audit 02750 audit system
     mkdir /data/misc/bluedroid 0770 bluetooth net_bt_stack
     mkdir /data/misc/bluetooth 0770 system system
     mkdir /data/misc/keystore 0700 keystore keystore
@@ -284,6 +289,9 @@ on post-fs-data
 
     # Set SELinux security contexts on upgrade or policy update.
     restorecon_recursive /data
+    restorecon /data/data
+    restorecon /data/user
+    restorecon /data/user/0
 
     # If there is no fs-post-data action in the init.<device>.rc file, you
     # must uncomment this line, otherwise encrypted filesystems
@@ -364,11 +372,8 @@ on boot
     chown system system /sys/class/leds/button-backlight/brightness
     chown system system /sys/class/leds/jogball-backlight/brightness
     chown system system /sys/class/leds/red/brightness
-    chown system system /sys/class/leds/red/blink
     chown system system /sys/class/leds/green/brightness
-    chown system system /sys/class/leds/green/brightness/blink
     chown system system /sys/class/leds/blue/brightness
-    chown system system /sys/class/leds/blue/brightness/blink
     chown system system /sys/class/leds/red/device/grpfreq
     chown system system /sys/class/leds/red/device/grppwm
     chown system system /sys/class/leds/red/device/blink
@@ -381,8 +386,6 @@ on boot
     chown system system /sys/kernel/ipv4/tcp_rmem_def
     chown system system /sys/kernel/ipv4/tcp_rmem_max
     chown root radio /proc/cmdline
-
-    chown system system /persist/phoneid.bin
 
     # Define default initial receive window size in segments.
     setprop net.tcp.default_init_rwnd 60
@@ -479,6 +482,12 @@ service console /system/bin/sh
     group shell log
     seclabel u:r:shell:s0
 
+# Disabled in Mer - together with CONFIG_AUDIT=n in mer-kernel-check
+service auditd /system/bin/auditd -k
+    seclabel u:r:logd:s0
+    class main
+    disabled
+
 on property:ro.debuggable=1
     start console
 
@@ -486,7 +495,7 @@ on property:ro.debuggable=1
 service adbd /sbin/adbd --root_seclabel=u:r:su:s0
     class core
     socket adbd stream 660 system system
-   # disabled
+    disabled
     seclabel u:r:adbd:s0
 
 # adbd on at boot in emulator
@@ -498,37 +507,36 @@ service lmkd /system/bin/lmkd
     socket lmkd seqpacket 0660 system system
 #    disabled
 
-# Custom servicemanager allows user nemo to register services
-service servicemanager /usr/libexec/droid-hybris/system/bin/servicemanager
+service servicemanager /system/bin/servicemanager
     class core
     user system
     group system
     critical
+    onrestart restart healthd
     onrestart restart minimedia
     onrestart restart minisf
     onrestart restart miniaf
-#    onrestart restart healthd
     onrestart restart zygote
     onrestart restart media
     onrestart restart surfaceflinger
-#    onrestart restart drm
+    onrestart restart drm
 
 service minimedia /usr/libexec/droid-hybris/system/bin/minimediaservice
+    setenv LD_PRELOAD /usr/libexec/droid-hybris/system/lib/libcameraservice.so
     class main
     user media
     group audio camera
     ioprio rt 4
-    setenv LD_PRELOAD /usr/libexec/droid-hybris/system/lib/libcameraservice.so
 
 service minisf /usr/libexec/droid-hybris/system/bin/minisfservice
-   class main
-   user system
-   group graphics
+    class main
+    user system
+    group graphics
 
 service miniaf /usr/libexec/droid-hybris/system/bin/miniafservice
-   class main
-   user system
-   group audio
+    class main
+    user system
+    group audio
 
 service vold /system/bin/vold
     class core
@@ -540,7 +548,8 @@ service vold /system/bin/vold
 # Disabled in Mer: conflicts with connman beyond usability
 # This will no longer work for mako: `ndc softap fwreload wlan0 AP` to reload mako firmware
 # mako (and similar fwreload) porters need to seek for alternative solution, see NEMO#793
-service netd /system/bin/netd
+# netd is required for sfdroid. but it has been patched to not break sfos but probably needs to be reworked.
+service netd /usr/libexec/droid-hybris/system/bin/netd
     class main
     socket netd stream 0660 root system
     socket dnsproxyd stream 0660 root inet
@@ -559,24 +568,15 @@ service ril-daemon /system/bin/rild
     socket rild stream 660 root radio
     socket rild-debug stream 660 radio system
     user root
-    group radio cache inet misc audio log qcom_diag
+    group radio cache inet misc audio sdcard_rw qcom_diag log
 
 # Disabled in Mer - used only during porting atm
 service surfaceflinger /system/bin/surfaceflinger
+    setenv LD_PRELOAD /usr/libexec/droid-hybris/system/lib/libsurfaceflinger.so
     class core
     user system
     group graphics drmrpc
     onrestart restart zygote
-#    disabled
-
-# Disabled in Mer
-service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
-    class main
-    socket zygote stream 660 root system
-    onrestart write /sys/android_power/request_state wake
-    onrestart write /sys/power/state on
-    onrestart restart media
-    onrestart restart netd
 #    disabled
 
 service drm /system/bin/drmserver
@@ -585,7 +585,7 @@ service drm /system/bin/drmserver
     group drm system inet drmrpc
 
 # Disabled in Mer
-service media /system/bin/mediaserver
+service media /usr/libexec/droid-hybris/system/bin/mediaserver
     class main
     user media
     group audio camera inet net_bt net_bt_admin net_bw_acct drmrpc mediadrm qcom_diag
@@ -608,7 +608,7 @@ service encrypt /system/bin/vdc --wait cryptfs enablecrypto inplace default
 
 service bootanim /system/bin/bootanimation
     class core
-    user media
+    user graphics
     group graphics audio
     disabled
     oneshot
@@ -621,6 +621,11 @@ service flash_recovery /system/bin/install-recovery.sh
     class main
     seclabel u:r:install_recovery:s0
     oneshot
+    disabled
+
+# update recovery if enabled
+on property:persist.sys.recovery_update=true
+    start flash_recovery
 
 service racoon /system/bin/racoon
     class main
