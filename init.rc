@@ -572,7 +572,6 @@ service ril-daemon /system/bin/rild
 
 # Disabled in Mer - used only during porting atm
 service surfaceflinger /system/bin/surfaceflinger
-    setenv LD_PRELOAD /usr/libexec/sfdroid/system/lib/libsurfaceflinger.so
     class core
     user system
     group graphics drmrpc
