@@ -507,7 +507,7 @@ service lmkd /system/bin/lmkd
     socket lmkd seqpacket 0660 system system
     # disabled
 
-service servicemanager /usr/libexec/sfdroid/system/bin/servicemanager
+service servicemanager /system/bin/servicemanager
     class core
     user system
     group system
