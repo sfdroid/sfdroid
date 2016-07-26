@@ -472,7 +472,7 @@ service healthd /sbin/healthd
     critical
     seclabel u:r:healthd:s0
 # Not used by Mer - spams logs and small battery drain
-#    disabled
+    # disabled
 
 service console /system/bin/sh
     class core
@@ -505,24 +505,24 @@ on property:ro.kernel.qemu=1
 service lmkd /system/bin/lmkd
     class core
     socket lmkd seqpacket 0660 system system
-#    disabled
+    # disabled
 
-service servicemanager /system/bin/servicemanager
+service servicemanager /usr/libexec/droid-hybris/system/bin/servicemanager
+# /system/bin/servicemanager
     class core
     user system
     group system
     critical
     onrestart restart healthd
     onrestart restart minimedia
-    onrestart restart minisf
-    onrestart restart miniaf
+#    onrestart restart minisf
+#    onrestart restart miniaf
     onrestart restart zygote
     onrestart restart media
     onrestart restart surfaceflinger
     onrestart restart drm
 
 service minimedia /usr/libexec/droid-hybris/system/bin/minimediaservice
-    setenv LD_PRELOAD /usr/libexec/droid-hybris/system/lib/libcameraservice.so
     class main
     user media
     group audio camera
@@ -532,30 +532,32 @@ service minisf /usr/libexec/droid-hybris/system/bin/minisfservice
     class main
     user system
     group graphics
+    disabled
 
 service miniaf /usr/libexec/droid-hybris/system/bin/miniafservice
     class main
     user system
     group audio
+    disabled
 
 service vold /system/bin/vold
     class core
     socket vold stream 0660 root mount
     ioprio be 2
     # Not used in Mer
-#    disabled
+    # disabled
 
 # Disabled in Mer: conflicts with connman beyond usability
 # This will no longer work for mako: `ndc softap fwreload wlan0 AP` to reload mako firmware
 # mako (and similar fwreload) porters need to seek for alternative solution, see NEMO#793
-# netd is required for sfdroid. but it has been patched to not break sfos but probably needs to be reworked.
-service netd /usr/libexec/sfdroid/system/bin/netd
+service netd /usr/libexec/droid-hybris/system/bin/netd
+#/system/bin/netd
     class main
     socket netd stream 0660 root system
     socket dnsproxyd stream 0660 root inet
     socket mdns stream 0660 root system
     socket fwmarkd stream 0660 root inet
-#    disabled
+    # disabled
 
 service debuggerd /system/bin/debuggerd
     class main
@@ -572,11 +574,12 @@ service ril-daemon /system/bin/rild
 
 # Disabled in Mer - used only during porting atm
 service surfaceflinger /system/bin/surfaceflinger
+    setenv LD_PRELOAD /usr/libexec/droid-hybris/system/lib/libsurfaceflinger.so
     class core
     user system
     group graphics drmrpc
     onrestart restart zygote
-#    disabled
+    # disabled
 
 service drm /system/bin/drmserver
     class main
@@ -584,12 +587,13 @@ service drm /system/bin/drmserver
     group drm system inet drmrpc
 
 # Disabled in Mer
-service media /usr/libexec/sfdroid/system/bin/mediaserver
+service media /usr/libexec/droid-hybris/system/bin/mediaserver
+#/system/bin/mediaserver
     class main
     user media
     group audio camera inet net_bt net_bt_admin net_bw_acct drmrpc mediadrm qcom_diag
     ioprio rt 4
-#    disabled
+    # disabled
 
 # One shot invocation to deal with encrypted volume.
 service defaultcrypto /system/bin/vdc --wait cryptfs mountdefaultencrypted
@@ -648,7 +652,7 @@ service keystore /system/bin/keystore /data/misc/keystore
     user keystore
     group keystore drmrpc
     # Not used in Mer
-#    disabled
+    # disabled
 
 service dumpstate /system/bin/dumpstate -s
     class main
