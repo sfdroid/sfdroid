@@ -507,8 +507,7 @@ service lmkd /system/bin/lmkd
     socket lmkd seqpacket 0660 system system
     # disabled
 
-service servicemanager /usr/libexec/droid-hybris/system/bin/servicemanager
-# /system/bin/servicemanager
+service servicemanager /usr/libexec/sfdroid/system/bin/servicemanager
     class core
     user system
     group system
@@ -550,8 +549,7 @@ service vold /system/bin/vold
 # Disabled in Mer: conflicts with connman beyond usability
 # This will no longer work for mako: `ndc softap fwreload wlan0 AP` to reload mako firmware
 # mako (and similar fwreload) porters need to seek for alternative solution, see NEMO#793
-service netd /usr/libexec/droid-hybris/system/bin/netd
-#/system/bin/netd
+service netd /usr/libexec/sfdroid/system/bin/netd
     class main
     socket netd stream 0660 root system
     socket dnsproxyd stream 0660 root inet
@@ -574,7 +572,7 @@ service ril-daemon /system/bin/rild
 
 # Disabled in Mer - used only during porting atm
 service surfaceflinger /system/bin/surfaceflinger
-    setenv LD_PRELOAD /usr/libexec/droid-hybris/system/lib/libsurfaceflinger.so
+    setenv LD_PRELOAD /usr/libexec/sfdroid/system/lib/libsurfaceflinger.so
     class core
     user system
     group graphics drmrpc
@@ -587,8 +585,7 @@ service drm /system/bin/drmserver
     group drm system inet drmrpc
 
 # Disabled in Mer
-service media /usr/libexec/droid-hybris/system/bin/mediaserver
-#/system/bin/mediaserver
+service media /usr/libexec/sfdroid/system/bin/mediaserver
     class main
     user media
     group audio camera inet net_bt net_bt_admin net_bw_acct drmrpc mediadrm qcom_diag
