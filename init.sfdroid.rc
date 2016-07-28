@@ -12,7 +12,7 @@ on init
     export LOOP_MOUNTPOINT /mnt/obb
     export BOOTCLASSPATH /system/framework/core-libart.jar:/system/framework/conscrypt.jar:/system/framework/okhttp.jar:/system/framework/core-junit.jar:/system/framework/bouncycastle.jar:/usr/libexec/sfdroid/system/framework/ext.jar:/usr/libexec/sfdroid/system/framework/framework.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/mms-common.jar:/system/framework/android.policy.jar:/system/framework/apache-xml.jar
     export SYSTEMSERVERCLASSPATH /system/framework/org.cyanogenmod.platform.jar:/system/framework/org.cyanogenmod.hardware.jar:/usr/libexec/sfdroid/system/framework/services.jar:/usr/libexec/sfdroid/system/framework/ethernet-service.jar:/usr/libexec/sfdroid/system/framework/wifi-service.jar
-    export LD_PRELOAD libsigchain.so
+    export LD_PRELOAD libsigchain.so:libNimsWrap.so:libopx_cam.so
 
 on boot
     class_start sfdroid
