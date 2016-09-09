@@ -1,0 +1,66 @@
+on init
+    export PATH /sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
+    # This is not 64-bit safe -stskeeps
+    export LD_LIBRARY_PATH /usr/libexec/sfdroid/system/lib:/usr/libexec/droid-hybris/lib-dev-alog:/vendor/lib:/system/lib
+    export ANDROID_BOOTLOGO 1
+    export ANDROID_ROOT /system
+    export ANDROID_ASSETS /system/app
+    export ANDROID_DATA /data
+    export ANDROID_STORAGE /storage
+    export ASEC_MOUNTPOINT /mnt/asec
+    export LOOP_MOUNTPOINT /mnt/obb
+    export BOOTCLASSPATH /system/framework/core-libart.jar:/system/framework/conscrypt.jar:/system/framework/okhttp.jar:/system/framework/core-junit.jar:/system/framework/bouncycastle.jar:/usr/libexec/sfdroid/system/framework/ext.jar:/usr/libexec/sfdroid/system/framework/framework.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/mms-common.jar:/system/framework/android.policy.jar:/system/framework/apache-xml.jar:/system/framework/qcmediaplayer.jar:/system/framework/org.codeaurora.Performance.jar:/system/framework/vcard.jar:/system/framework/tcmiface.jar:/system/framework/WfdCommon.jar:/system/framework/qcom.fmradio.jar:/system/framework/security-bridge.jar:/system/framework/qsb-port.jar:/system/framework/oem-services.jar
+    export SYSTEMSERVERCLASSPATH /usr/libexec/sfdroid/system/framework/services.jar:/usr/libexec/sfdroid/system/framework/ethernet-service.jar:/usr/libexec/sfdroid/system/framework/wifi-service.jar
+    export LD_PRELOAD libsigchain.so:libNimsWrap.so
+
+on boot
+    class_start sfdroid
+
+service sfdroid_zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
+    class sfdroid
+    socket zygote stream 660 root system
+    onrestart write /sys/android_power/request_state wake
+    onrestart write /sys/power/state on
+    onrestart restart sfdroid_media
+    onrestart restart sfdroid_netd
+
+# netd is required for sfdroid. but it has been patched to not break sfos but probably still needs to be reworked.
+service sfdroid_netd /usr/libexec/sfdroid/system/bin/netd
+    class sfdroid
+    socket netd stream 0660 root system
+    socket dnsproxyd stream 0660 root inet
+    socket mdns stream 0660 root system
+    socket fwmarkd stream 0660 root inet
+
+service sfdroid_sf /system/bin/surfaceflinger
+    setenv LD_PRELOAD /usr/libexec/sfdroid/system/lib/libsurfaceflinger.so
+    class sfdroid
+    user system
+    group graphics drmrpc
+    onrestart restart sfdroid_zygote
+
+service sfdroid_media /usr/libexec/sfdroid/system/bin/mediaserver
+    class main
+    user media
+    group audio camera inet net_bt net_bt_admin net_bw_acct drmrpc mediadrm qcom_diag
+    ioprio rt 4
+
+service sfdroid_keystore /system/bin/keystore /data/misc/keystore
+    class main
+    user keystore
+    group keystore drmrpc
+
+service sfdroid_vold /system/bin/vold
+    class sfdroid
+    socket vold stream 0660 root mount
+    ioprio be 2
+
+service sfdroid_healthd /sbin/healthd
+    class sfdroid
+    critical
+    seclabel u:r:healthd:s0
+
+service sfdroid_lmkd /system/bin/lmkd
+    class sfdroid
+    socket lmkd seqpacket 0660 system system
+

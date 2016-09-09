@@ -1,1 +1,0 @@
-SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="sfdroid-input", GROUP="input"
